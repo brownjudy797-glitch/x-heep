@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wsl.exe -e bash -c 'echo \"=== OS ===\" && cat /etc/os-release | head -3 && echo \"=== Project ===\" && ls /home/rime/x-heep/Makefile 2>/dev/null && echo \"=== Python ===\" && python3 --version 2>/dev/null && echo \"=== Verilator ===\" && which verilator 2>/dev/null && verilator --version 2>/dev/null && echo \"=== fusesoc ===\" && which fusesoc 2>/dev/null && echo \"=== riscv gcc ===\" && riscv32-corev-elf-gcc --version 2>/dev/null | head -1; riscv32-unknown-elf-gcc --version 2>/dev/null | head -1')"
+    ]
+  }
+}

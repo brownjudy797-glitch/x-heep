@@ -5,3 +5,4 @@
 `verilator_config
 
 lint_off -rule UNUSEDSIGNAL -file "*rtl/cve2_core.sv" -match "Signal is not used: 'rf_ren_c'*"
+lint_off -rule COMBDLY -file "*cve2_clock_gate.sv" -match "Non-blocking assignment '<=' in combinational logic process"

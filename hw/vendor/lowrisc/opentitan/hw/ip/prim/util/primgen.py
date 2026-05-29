@@ -17,7 +17,14 @@ except ImportError:
 
 
 def _split_vlnv(core_vlnv):
-    (vendor, library, name, version) = core_vlnv.split(':', 4)
+    parts = core_vlnv.split(':')
+    if len(parts) == 4:
+        vendor, library, name, version = parts
+    elif len(parts) == 3:
+        vendor, library, name = parts
+        version = '0'
+    else:
+        raise ValueError(f"Cannot parse VLNV: {core_vlnv}")
     return {
         'vendor': vendor,
         'library': library,
@@ -197,12 +204,52 @@ def _parse_parameter_port_list(parameter_port_list):
     return parameters
 
 
+def _scan_cores(files_root):
+    """Build cores dict compatible with FuseSoC 1.x GAPI from filesystem scan."""
+    import glob as _glob
+    # Scan from the hw root (go up from files_root to find hw/)
+    search_roots = [files_root]
+    p = os.path.abspath(files_root)
+    for _ in range(6):
+        p = os.path.dirname(p)
+        search_roots.append(p)
+    cores = {}
+    for search_root in search_roots:
+        for core_file in _glob.glob(os.path.join(search_root, '**', '*.core'), recursive=True):
+            if core_file in cores:
+                continue
+            try:
+                with open(core_file) as f:
+                    core_data = yaml.load(f, Loader=YamlLoader)
+            except Exception:
+                continue
+            if not isinstance(core_data, dict):
+                continue
+            name = core_data.get('name', '')
+            if not name:
+                continue
+            core_root = os.path.dirname(os.path.abspath(core_file))
+            # Collect all files from all filesets
+            all_files = []
+            filesets = core_data.get('filesets', {})
+            if isinstance(filesets, dict):
+                for fs_name, fs_data in filesets.items():
+                    if isinstance(fs_data, dict):
+                        fs_files = fs_data.get('files', [])
+                        if isinstance(fs_files, list):
+                            all_files.extend(fs_files)
+            cores[name] = {
+                'name': name,
+                'core_root': core_root,
+                'files': all_files,
+            }
+    return cores
+
+
 def _check_gapi(gapi):
     if 'cores' not in gapi:
-        print("Key 'cores' not found in GAPI structure. "
-              "Install a compatible version with "
-              "'pip3 install --user -r python-requirements.txt'.")
-        return False
+        files_root = gapi.get('files_root', os.path.curdir)
+        gapi['cores'] = _scan_cores(files_root)
     return True
 
 
@@ -351,14 +398,35 @@ def _generate_abstract_impl(gapi):
     dependencies += [
         _core_info_for_techlib(prim_cores, t)[0] for t in techlibs
     ]
+    # Include the generic implementation file directly in the generated core's
+    # file list, so FuseSoC can find it without needing to resolve dependencies
+    # on the prim_generic cores (which FuseSoC 2.x doesn't do for generated cores).
+    generic_file_relpath = os.path.relpath(
+        top_module_file,
+        os.path.dirname(abstract_prim_core_filepath)
+    )
+    gen_files = [
+        abstract_prim_sv_filepath,
+        generic_file_relpath,
+    ]
+    # Some generic primitives need prim_util_memload.svh which is normally
+    # a transitive dependency. Include it directly since FuseSoC 2.x doesn't
+    # resolve transitive deps of generated cores.
+    _MEMLOAD_PRIMS = {'ram_1p', 'ram_2p', 'rom'}
+    if prim_name in _MEMLOAD_PRIMS:
+        memload_src = os.path.join(
+            os.path.dirname(__file__), '..', 'rtl', 'prim_util_memload.svh')
+        memload_relpath = os.path.relpath(
+            os.path.abspath(memload_src),
+            os.path.dirname(abstract_prim_core_filepath)
+        )
+        gen_files.append({memload_relpath: {'is_include_file': True}})
     abstract_prim_core = {
         'name': "lowrisc:prim_abstract:%s" % (prim_name, ),
         'filesets': {
             'files_rtl': {
                 'depend': dependencies,
-                'files': [
-                    abstract_prim_sv_filepath,
-                ],
+                'files': gen_files,
                 'file_type': 'systemVerilogSource'
             },
         },

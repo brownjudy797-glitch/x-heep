@@ -5,3 +5,4 @@
 `verilator_config
 
 lint_off -rule UNUSEDPARAM -file "*/*_reg_top.sv" -match "Parameter is not used: 'AW'"
+lint_off -rule UNOPTFLAT -file "*/register_interface/src/reg_demux.sv" -match "*"

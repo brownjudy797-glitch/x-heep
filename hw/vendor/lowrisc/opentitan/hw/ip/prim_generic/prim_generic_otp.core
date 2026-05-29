@@ -32,7 +32,6 @@ filesets:
       - lint/prim_generic_otp.waiver
     file_type: waiver
 
-
 targets:
   default:
     filesets:

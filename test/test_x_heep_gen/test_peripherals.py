@@ -9,7 +9,6 @@ import mcu_gen
 import os
 import hjson
 
-
 x_heep_cfg = "configs/general.hjson"
 pads_cfg = "configs/pad_cfg.py"
 config_directory = "test/test_x_heep_gen/configs/"

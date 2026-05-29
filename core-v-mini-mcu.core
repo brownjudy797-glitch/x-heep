@@ -392,6 +392,7 @@ targets:
           - '-CFLAGS "-Wall -fpermissive"'
           - '-LDFLAGS "-pthread -lutil -lelf"'
           - "-Wall"
+          - "-Wno-fatal"
 
   sim_sc:
     <<: *default_target
@@ -430,6 +431,7 @@ targets:
           - '-CFLAGS "-Wall -fpermissive"'
           - '-LDFLAGS "-pthread -lutil -lelf"'
           - "-Wall"
+          - "-Wno-fatal"
 
   nexys-a7-100t:
     <<: *default_target

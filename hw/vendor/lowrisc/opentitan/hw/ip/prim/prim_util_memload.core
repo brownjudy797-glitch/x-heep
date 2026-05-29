@@ -7,6 +7,7 @@ name: "lowrisc:prim:util_memload"
 description: "Memory loaders for simulation. To be included in a memory primitive."
 filesets:
   files_rtl:
+    depend: []
     files:
       - rtl/prim_util_memload.svh: {is_include_file: true}
     file_type: systemVerilogSource
